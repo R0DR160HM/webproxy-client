@@ -49,7 +49,7 @@ export function start(baseServerUrl: string, authorizationToken: string) {
 			// Provide
 			if (typeof message.data === 'string' && message.data.startsWith('/p ')) {
 				const [_command, name, ...rest] = message.data.split(' ')
-				if (pendingRequests.has(name) && pendingRequests.get(name) !== null) {
+				if (name && rest.length && pendingRequests.has(name) && pendingRequests.get(name) !== null) {
 					pendingRequests.set(name, rest.join(' '))
 				}
 			}
