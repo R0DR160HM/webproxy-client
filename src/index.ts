@@ -143,7 +143,7 @@ async function requestFromNetwork(info: CacheInfo): Promise<string | null> {
 	ws.send(`/r ${info.resourceName}`);
 	
 
-	for (let i = 0; i < 400; i++) {
+	for (let i = 0; i < 200; i++) {
 		await delay(1);
 		const response = pendingRequests.get(info.resourceName);
 		if (response) {

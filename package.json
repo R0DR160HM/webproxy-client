@@ -1,6 +1,6 @@
 {
   "name": "webproxy-client",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "The client library for the WebProxy distributed cache engine.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
