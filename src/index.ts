@@ -173,13 +173,13 @@ export async function fetchCached(input: RequestInfo | URL, options?: RequestIni
 	}
 
 	const serverResponse = await window.fetch(input, options);
+	response = await serverResponse.text();
 	
 	if (serverResponse.status === 200) {
-		serverResponse.text()
-			.then(resp => insertDatagram(info, resp))
+		insertDatagram(info, response)
 	}
 
-	return serverResponse;
+	return new Response(response, { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
 function openDB(): Promise<IDBDatabase> {
