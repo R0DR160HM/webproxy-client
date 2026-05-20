@@ -65,7 +65,7 @@ export function start(baseServerUrl: string, authorizationToken: string) {
 				if (ws.readyState === WebSocket.OPEN) {
 					ws.send('ping')
 				}
-			}, 15_000);
+			}, 30_000);
 
 			ws.send(`/s ${authorizationToken}`);
 		})
