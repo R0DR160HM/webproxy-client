@@ -2,12 +2,15 @@ const DB_NAME = "webproxy-client-db";
 const DB_VERSION = 1;
 const STORE_NAME = 'CacheStore'
 
-const DEFAULT_CACHE_DURATION = 5184000000 // 60 days
+const DEFAULT_CACHE_DURATION = 5184000000; // 60 days
+const DEFAULT_WAITING_TIME = 400;
 
 let ws: WebSocket;
 let reconnectionDelay = 1_000;
 
 const pendingRequests = new Map<string, string | null>();
+
+const originalFetch = window.fetch;
 
 export function start(baseServerUrl: string, authorizationToken: string) {
 	let rebooted = false;
@@ -92,6 +95,7 @@ export type CacheInfo = {
 	resourceName: string;
 	resourceScopes: string[];
 	keepResourceFor: number;
+	waitForResource?: number;
 }
 
 async function readDatagram(info: CacheInfo, checkDate = true): Promise<string | null> {
@@ -132,6 +136,14 @@ async function insertDatagram(info: CacheInfo, value: string) {
 	store.add(datagram);
 }
 
+export function overwriteFetch(options: Partial<CacheInfo>) {
+	window.fetch = (...params: any) => {
+		window.fetch = originalFetch
+		params[1] = Object.assign(params[1] || {}, options);
+		return fetchCached(params[0], params[1])
+	}
+}
+
 async function requestFromNetwork(info: CacheInfo): Promise<string | null> {
 	if (ws.readyState !== WebSocket.OPEN) {
 		return null;
@@ -143,7 +155,8 @@ async function requestFromNetwork(info: CacheInfo): Promise<string | null> {
 	ws.send(`/r ${info.resourceName}`);
 	
 
-	for (let i = 0; i < 6; i++) {
+	const iterations = Math.ceil(info.waitForResource! / 50)
+	for (let i = 0; i < iterations; i++) {
 		await delay(50);
 		const response = pendingRequests.get(info.resourceName);
 		if (response) {
@@ -158,7 +171,8 @@ export async function fetchCached(input: RequestInfo | URL, options?: RequestIni
 	const info = {
 		resourceName: options?.resourceName || new Request(input, options).url,
 		resourceScopes: options?.resourceScopes || ['*'],
-		keepResourceFor: options?.keepResourceFor || DEFAULT_CACHE_DURATION
+		keepResourceFor: options?.keepResourceFor || DEFAULT_CACHE_DURATION,
+		waitForResource: options?.waitForResource || DEFAULT_WAITING_TIME
 	};
 
 	let response = await readDatagram(info);
@@ -172,7 +186,7 @@ export async function fetchCached(input: RequestInfo | URL, options?: RequestIni
 		return new Response(response, { status: 200, headers: { 'Content-Type': 'application/json' } });
 	}
 
-	const serverResponse = await window.fetch(input, options);
+	const serverResponse = await originalFetch(input, options);
 	response = await serverResponse.text();
 	
 	if (serverResponse.status === 200) {
