@@ -1,6 +1,6 @@
 {
   "name": "webproxy-client",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "The client library for the WebProxy distributed cache engine.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -15,7 +15,7 @@
   "files": ["dist"],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup src/index.ts --format esm,cjs --dts --sourcemap --clean",
+    "build": "tsup src/index.ts --format esm,cjs --dts --sourcemap --clean --minify",
     "prepublishOnly": "npm run build"
   },
   "keywords": [],

@@ -2,7 +2,7 @@ const DB_NAME = "webproxy-client-db";
 const DB_VERSION = 1;
 const STORE_NAME = 'CacheStore'
 
-const DEFAULT_CACHE_DURATION = 5184000000; // 60 days
+const CACHE_DURATION = 5184000000; // 60 days
 const DEFAULT_WAITING_TIME = 400;
 
 let ws: WebSocket;
@@ -12,7 +12,25 @@ const pendingRequests = new Map<string, string | null>();
 
 const originalFetch = window.fetch;
 
+async function cleanup(): Promise<void> {
+	const cutoffTime = Date.now() - CACHE_DURATION 
+
+	const db = await openDB()
+	const tx = db.transaction(STORE_NAME, 'readwrite');
+	const store = tx.objectStore(STORE_NAME);
+
+	const cursorRequest = store.openCursor();
+	cursorRequest.onsuccess = (e: any) => {
+		const cursor = e?.target?.result;
+		if (cursor && cursor.value.createdAt < cutoffTime) {
+			cursor.delete();
+		} 
+	}
+}
+
 export function start(baseServerUrl: string, authorizationToken: string) {
+	cleanup();
+
 	let rebooted = false;
 	let intervalId: number;
 
@@ -171,7 +189,7 @@ export async function fetchCached(input: RequestInfo | URL, options?: RequestIni
 	const info = {
 		resourceName: options?.resourceName || new Request(input, options).url,
 		resourceScopes: options?.resourceScopes || ['*'],
-		keepResourceFor: options?.keepResourceFor || DEFAULT_CACHE_DURATION,
+		keepResourceFor: options?.keepResourceFor || CACHE_DURATION,
 		waitForResource: options?.waitForResource || DEFAULT_WAITING_TIME
 	};
 
