@@ -46,7 +46,7 @@ export function start(baseServerUrl: string, authorizationToken: string) {
 				rebooted = true;
 				clearInterval(intervalId)
 				ws.close();
-				setTimeout(() => start(baseServerUrl, authorizationToken), reconnectionDelay);
+				setTimeout(() => start(baseServerUrl, authorizationToken), Math.ceil(Math.random() * 30_000) + reconnectionDelay);
 				reconnectionDelay *= 2;
 			}
 		})	
@@ -56,7 +56,7 @@ export function start(baseServerUrl: string, authorizationToken: string) {
 			if (!rebooted) {
 				rebooted = true;
 				clearInterval(intervalId)
-				setTimeout(() => start(baseServerUrl, authorizationToken), reconnectionDelay);
+				setTimeout(() => start(baseServerUrl, authorizationToken), Math.ceil(Math.random() * 30_000) + reconnectionDelay);
 				reconnectionDelay *= 2;
 			}
 		})
