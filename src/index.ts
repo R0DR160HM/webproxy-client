@@ -10,7 +10,6 @@ let reconnectionDelay = 1_000;
 
 const pendingRequests = new Map<string, string | null>();
 
-const originalFetch = window.fetch;
 
 async function cleanup(): Promise<void> {
 	const cutoffTime = Date.now() - CACHE_DURATION 
@@ -154,14 +153,6 @@ async function insertDatagram(info: CacheInfo, value: string) {
 	store.add(datagram);
 }
 
-export function overwriteFetch(options: Partial<CacheInfo>) {
-	window.fetch = (...params: any) => {
-		window.fetch = originalFetch
-		params[1] = Object.assign(params[1] || {}, options);
-		return fetchCached(params[0], params[1])
-	}
-}
-
 async function requestFromNetwork(info: CacheInfo): Promise<string | null> {
 	if (ws.readyState !== WebSocket.OPEN) {
 		return null;
@@ -204,7 +195,7 @@ export async function fetchCached(input: RequestInfo | URL, options?: RequestIni
 		return new Response(response, { status: 200, headers: { 'Content-Type': 'application/json' } });
 	}
 
-	const serverResponse = await originalFetch(input, options);
+	const serverResponse = await window.fetch(input, options);
 	response = await serverResponse.text();
 	
 	if (serverResponse.status === 200) {
