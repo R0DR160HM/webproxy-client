@@ -106,6 +106,7 @@ type Datagram = {
 	value: string;
 	scopes: string[];
 	createdAt: number;
+	keepFor: number;
 };
 
 export type CacheInfo = {
@@ -127,7 +128,11 @@ async function readDatagram(info: CacheInfo, checkDate = true): Promise<string |
 			if (!result) {
 				return resolve(null)
 			}
-			if (checkDate && (Date.now() - result.createdAt) > info.keepResourceFor) {
+			if (!result.keepFor) {
+				store.delete(info.resourceName);
+				return resolve(null);
+			}
+			if (checkDate && (Date.now() - result.createdAt) > result.keepFor) {
 				store.delete(info.resourceName);
 				return resolve(null);
 			}
@@ -148,7 +153,8 @@ async function insertDatagram(info: CacheInfo, value: string) {
 		createdAt: Date.now(),
 		name: info.resourceName,
 		scopes: info.resourceScopes,
-		value: value
+		value: value,
+		keepFor: info.keepResourceFor
 	}
 	store.add(datagram);
 }
