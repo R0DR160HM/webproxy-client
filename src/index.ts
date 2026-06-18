@@ -10,7 +10,6 @@ let reconnectionDelay = 1_000;
 
 const pendingRequests = new Map<string, string | null>();
 
-
 async function cleanup(): Promise<void> {
 	const cutoffTime = Date.now() - CACHE_DURATION 
 
@@ -192,6 +191,9 @@ export async function fetchCached(input: RequestInfo | URL, options?: RequestIni
 
 	let response = await readDatagram(info);
 	if (response) {
+		if (ws?.readyState === WebSocket.OPEN) {
+			ws.send('/h')
+		}
 		return new Response(response, { status: 200, headers: { 'Content-Type': 'application/json' } });
 	}
 	
@@ -225,4 +227,27 @@ function openDB(): Promise<IDBDatabase> {
 		request.onsuccess = (event: any) => resolve(event.target.result);
 		request.onerror = (event: any) => reject(event?.target?.error);
 	});
+}
+
+export async function fetchFromCache(info: CacheInfo) {
+	let response = await readDatagram(info);
+	if (response) {
+		if (ws?.readyState === WebSocket.OPEN) {
+			ws.send('/h')
+		}
+		return response;
+	}
+	
+	response = await requestFromNetwork(info);
+	if (response) {
+		insertDatagram(info, response);
+		return response;
+	}
+}
+
+export const webProxy = {
+	sync: start,
+	fetch: fetchCached,
+	getItem: fetchFromCache,
+	setItem: insertDatagram
 }
