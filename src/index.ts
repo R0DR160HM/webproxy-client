@@ -11,7 +11,6 @@ let reconnectionDelay = 1_000;
 const pendingRequests = new Map<string, string | null>();
 
 async function cleanup(): Promise<void> {
-	const cutoffTime = Date.now() - CACHE_DURATION 
 
 	const db = await openDB()
 	const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -20,6 +19,7 @@ async function cleanup(): Promise<void> {
 	const cursorRequest = store.openCursor();
 	cursorRequest.onsuccess = (e: any) => {
 		const cursor = e?.target?.result;
+		const cutoffTime = Date.now() - (cursor?.value?.keepFor || CACHE_DURATION) 
 		if (cursor && cursor.value.createdAt < cutoffTime) {
 			cursor.delete();
 		} 
