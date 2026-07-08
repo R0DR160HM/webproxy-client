@@ -77,6 +77,11 @@ export function start(baseServerUrl: string, authorizationToken: string) {
 			if (typeof message.data === 'string' && message.data.startsWith('/r ')) {
 				provideRequestedData(message.data.replace('/r ', ''))
 			}
+
+			// Invalidate
+			if (typeof message.data === 'string' && message.data.startsWith('/d ')) {
+				deleteDaragram(message.data.replace('/d ', ''))
+			}
 		});
 
 		ws.addEventListener('open', () => {
@@ -113,6 +118,17 @@ export type CacheInfo = {
 	resourceScopes: string[];
 	keepResourceFor: number;
 	waitForResource?: number;
+}
+
+async function deleteDaragram(name: string): Promise<void> {
+	const db = await openDB();
+	return new Promise((resolve, reject) => {
+		const tx = db.transaction(STORE_NAME, 'readwrite');
+		const store = tx.objectStore(STORE_NAME);
+		const request = store.delete(name);
+		request.onsuccess = () => resolve(undefined);
+		request.onerror = () => reject(new Error('Resource not found'));
+	});
 }
 
 async function readDatagram(info: CacheInfo, checkDate = true): Promise<string | null> {
@@ -197,10 +213,12 @@ export async function fetchCached(input: RequestInfo | URL, options?: RequestIni
 		return new Response(response, { status: 200, headers: { 'Content-Type': 'application/json' } });
 	}
 	
-	response = await requestFromNetwork(info);
-	if (response) {
-		insertDatagram(info, response);
-		return new Response(response, { status: 200, headers: { 'Content-Type': 'application/json' } });
+	if (ws?.readyState === WebSocket.OPEN) {
+		response = await requestFromNetwork(info);
+		if (response) {
+			insertDatagram(info, response);
+			return new Response(response, { status: 200, headers: { 'Content-Type': 'application/json' } });
+		}
 	}
 
 	const serverResponse = await window.fetch(input, options);
@@ -249,5 +267,6 @@ export const webProxy = {
 	sync: start,
 	fetch: fetchCached,
 	getItem: fetchFromCache,
-	setItem: insertDatagram
+	setItem: insertDatagram,
+	removeItem: deleteDaragram
 }
